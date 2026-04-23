@@ -5,18 +5,18 @@ function parseNaturalQuery(query) {
 
     // Gender - check "male and female" first
     if (q.includes('male and female') || q.includes('female and male')) {
-        // no gender filter - both genders
-    } else if (/\bfemale\b/.test(q)) {
+        // no gender filter
+    } else if (/\bfemales?\b/.test(q)) {
         filters.gender = 'female'
-    } else if (/\bmale\b/.test(q)) {
+    } else if (/\bmales?\b/.test(q)) {
         filters.gender = 'male'
     }
 
     // Age groups
-    if (q.includes('child')) filters.age_group = 'child'
-    if (q.includes('teenager')) filters.age_group = 'teenager'
-    if (q.includes('adult')) filters.age_group = 'adult'
-    if (q.includes('senior')) filters.age_group = 'senior'
+    if (q.includes('child') || q.includes('children')) filters.age_group = 'child'
+    if (q.includes('teenager') || q.includes('teenagers')) filters.age_group = 'teenager'
+    if (q.includes('adult') || q.includes('adults')) filters.age_group = 'adult'
+    if (q.includes('senior') || q.includes('seniors')) filters.age_group = 'senior'
 
     // Young maps to 16-24
     if (q.includes('young')) {
@@ -24,11 +24,12 @@ function parseNaturalQuery(query) {
         filters.max_age = 24
     }
 
-    // Age ranges
-    const aboveMatch = q.match(/above (\d+)/)
+    // Age ranges - above/over/older than
+    const aboveMatch = q.match(/(?:above|over|older than) (\d+)/)
     if (aboveMatch) filters.min_age = parseInt(aboveMatch[1])
 
-    const belowMatch = q.match(/below (\d+)/)
+    // below/under/younger than
+    const belowMatch = q.match(/(?:below|under|younger than) (\d+)/)
     if (belowMatch) filters.max_age = parseInt(belowMatch[1])
 
     // Countries
@@ -46,7 +47,9 @@ function parseNaturalQuery(query) {
         'united states': 'US', 'india': 'IN',
         'united kingdom': 'GB', 'france': 'FR',
         'namibia': 'NA', 'cape verde': 'CV',
-        'dr congo': 'CD', 'malawi': 'MW'
+        'dr congo': 'CD', 'malawi': 'MW', 'togo': 'TG',
+        'liberia': 'LR', 'sierra leone': 'SL', 'gambia': 'GM',
+        'botswana': 'BW', 'lesotho': 'LS', 'eswatini': 'SZ'
     }
 
     for (const [country, code] of Object.entries(countryMap)) {

@@ -138,7 +138,6 @@ const getAllProfiles = async (req, res) => {
 
 const searchProfiles = async (req, res) => {
     const { q } = req.query
-    console.log('RAW QUERY:', q)
 
     const page = parseInt(req.query.page) || 1
     const limit = Math.min(parseInt(req.query.limit) || 10, 50)
@@ -152,7 +151,6 @@ const searchProfiles = async (req, res) => {
     }
 
     const filters = parseNaturalQuery(q)
-    console.log('PARSED FILTERS:', filters)
 
     if (!filters || Object.keys(filters).length === 0) {
         return res.status(422).json({
