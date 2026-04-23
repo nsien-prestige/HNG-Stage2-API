@@ -3,6 +3,25 @@ const pool = require('../db/db')
 const getAllProfiles = async (req, res) => {
     const page = req.query.page || 1
     const limit = Math.min(req.query.limit || 10, 50)
+    const sortBy = req.query.sort_by || 'created_at'
+    const order = req.query.order || 'asc'
+
+    const allowedSortFields = ['created_at', 'age', 'gender_probability']
+    const allowedOrder = ['asc', 'desc']
+
+    if (!allowedSortFields.includes(sortBy) || !allowedOrder.includes(order)) {
+        return res.status(400).json({
+            "status": "error",
+            "message": "Invalid query parameter"
+        })
+    }
+
+    if (isNaN(page) || isNaN(limit)) {
+        return res.status(422).json({
+            "status": "error",
+            "message": "Page and limit must be numbers"
+        })
+    }
 
     const offset = (page - 1) * limit
 
@@ -26,21 +45,49 @@ const getAllProfiles = async (req, res) => {
         }
 
         if (req.query.min_age) {
+            if (isNaN(req.query.min_age)) {
+                return res.status(422).json({
+                    "status": "error",
+                    "message": "min_age must be a number"
+                })
+            }
+
             conditions.push(`age >= $${conditions.length + 1}`)
             values.push(req.query.min_age)
         }
 
         if (req.query.max_age) {
+            if (isNaN(req.query.max_age)) {
+                return res.status(422).json({
+                    "status": "error",
+                    "message": "max_age must be a number"
+                })
+            }
+
             conditions.push(`age <= $${conditions.length + 1}`)
             values.push(req.query.max_age)
         }
 
         if (req.query.min_gender_probability) {
+            if (isNaN(req.query.min_gender_probability)) {
+                return res.status(422).json({
+                    "status": "error",
+                    "message": "min_gender_probability must be a number"
+                })
+            }
+
             conditions.push(`gender_probability >= $${conditions.length + 1}`)
             values.push(req.query.min_gender_probability)
         }
 
         if (req.query.min_country_probability) {
+            if (isNaN(req.query.min_country_probability)) {
+                return res.status(422).json({
+                    "status": "error",
+                    "message": "min_country_probability must be a number"
+                })
+            }
+
             conditions.push(`country_probability >= $${conditions.length + 1}`)
             values.push(req.query.min_country_probability)
         }
@@ -54,7 +101,7 @@ const getAllProfiles = async (req, res) => {
         values.push(limit, offset)
 
         const result = await pool.query(
-            `SELECT * FROM profiles ${whereClause} LIMIT $${values.length - 1} OFFSET $${values.length}`,
+            `SELECT * FROM profiles ${whereClause} ORDER BY ${sortBy} ${order} LIMIT $${values.length - 1} OFFSET $${values.length}`,
             values
         )
 
