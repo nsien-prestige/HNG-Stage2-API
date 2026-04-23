@@ -6,13 +6,25 @@ const getAllProfiles = async (req, res) => {
     const sortBy = req.query.sort_by || 'created_at'
     const order = req.query.order || 'asc'
 
+    const allowedGenders = ['male', 'female']
+    const allowedAgeGroups = ['child', 'teenager', 'adult', 'senior']
     const allowedSortFields = ['created_at', 'age', 'gender_probability']
     const allowedOrder = ['asc', 'desc']
+
+    if (
+        (req.query.gender && !allowedGenders.includes(req.query.gender)) || 
+        (req.query.age_group && !allowedAgeGroups.includes(req.query.age_group))
+    ) {
+        return res.status(422).json({
+            "status": "error",
+            "message": "Invalid query parameters"
+        })
+    }
 
     if (!allowedSortFields.includes(sortBy) || !allowedOrder.includes(order)) {
         return res.status(400).json({
             "status": "error",
-            "message": "Invalid query parameter"
+            "message": "Invalid query parameters"
         })
     }
 
