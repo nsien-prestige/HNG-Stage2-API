@@ -1,4 +1,5 @@
 const pool = require('../db/db')
+const parseNaturalQuery = require('../utils/queryParser')
 
 const getAllProfiles = async (req, res) => {
     const page = req.query.page || 1
@@ -135,6 +136,97 @@ const getAllProfiles = async (req, res) => {
     }
 }
 
+const searchProfiles = async (req, res) => {
+    const { q } = req.query
+    console.log('RAW QUERY:', q)
+
+    const page = parseInt(req.query.page) || 1
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50)
+    const offset = (page - 1) * limit
+
+    if (!q || q.trim() === '') {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Missing query parameter'
+        })
+    }
+
+    const filters = parseNaturalQuery(q)
+    console.log('PARSED FILTERS:', filters)
+
+    if (!filters || Object.keys(filters).length === 0) {
+        return res.status(422).json({
+            status: 'error',
+            message: 'Unable to interpret query'
+        })
+    }
+
+    try {
+        const conditions = []
+        const values = []
+
+        if (filters.gender) {
+            conditions.push(`gender = $${values.length + 1}`)
+            values.push(filters.gender)
+        }
+
+        if (filters.age_group) {
+            conditions.push(`age_group = $${values.length + 1}`)
+            values.push(filters.age_group)
+        }
+
+        if (filters.country_id) {
+            conditions.push(`country_id = $${values.length + 1}`)
+            values.push(filters.country_id)
+        }
+
+        if (filters.min_age) {
+            conditions.push(`age >= $${values.length + 1}`)
+            values.push(filters.min_age)
+        }
+
+        if (filters.max_age) {
+            conditions.push(`age <= $${values.length + 1}`)
+            values.push(filters.max_age)
+        }
+
+        const whereClause = conditions.length
+            ? `WHERE ${conditions.join(' AND ')}`
+            : ''
+
+        values.push(limit, offset)
+
+        const result = await pool.query(
+            `SELECT * FROM profiles
+            ${whereClause}
+            LIMIT $${values.length - 1}
+            OFFSET $${values.length}`,
+            values
+        )
+
+        const totalResult = await pool.query(
+            `SELECT COUNT(*) FROM profiles ${whereClause}`,
+            values.slice(0, -2)
+        )
+
+        res.status(200).json({
+            status: 'success',
+            page,
+            limit,
+            total: parseInt(totalResult.rows[0].count),
+            data: result.rows
+        })
+    } catch (err) {
+        console.error(err)
+
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error'
+        })
+    }
+}
+
 module.exports = {
-    getAllProfiles
+    getAllProfiles,
+    searchProfiles
 }
